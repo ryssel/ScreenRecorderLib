@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TestRepetitiveRecordings": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
