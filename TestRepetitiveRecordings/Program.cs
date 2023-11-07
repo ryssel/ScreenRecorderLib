@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -9,7 +9,8 @@ namespace TestRepetitiveRecordings
     {
         private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-        public static bool KeepRecording { get; set; }
+        public static bool Recording { get; set; }
+        private static int _recordingInstance;
         public static IntPtr WindowHandle { get; set; }
         private static readonly string _applicationPath = @"mspaint.exe";
         //private static readonly string _applicationPath = @"C:\Enemies\Enemies.exe";
@@ -40,8 +41,8 @@ namespace TestRepetitiveRecordings
             {
                 while (true)
                 {
-                    var state = KeepRecording ? "Recording" : "Stopped  ";
-                    Console.Write($"\rElapsed: {_stopWatch.Elapsed:hh\\:mm\\:ss} - {state}");
+                    var state = Recording ? "Recording" : "Stopped  ";
+                    Console.Write($"\rElapsed: {_stopWatch.Elapsed:hh\\:mm\\:ss} - {state} #{_recordingInstance}");
                     Task.Delay(1000);
                 }
             });
@@ -54,8 +55,8 @@ namespace TestRepetitiveRecordings
                 }
                 if (info.Key == ConsoleKey.Enter)
                 {
-                    KeepRecording = !KeepRecording;
-                    if (KeepRecording)
+                    Recording = !Recording;
+                    if (Recording)
                         _stopWatch.Start();
                     else
                     {
@@ -64,22 +65,30 @@ namespace TestRepetitiveRecordings
                 }
             }
 
-            KeepRecording = false;
+            Recording = false;
         }
 
         private static async void StartConcurrentRecordings()
         {
             if (WindowHandle == IntPtr.Zero)
                 StartNewProcess();
-            KeepRecording = true;
+            Recording = true;
             try
             {
-                while (KeepRecording)
+                while (true)
                 {
-                    var screenRecorderViewModel = new ScreenRecorderViewModel();
-                    screenRecorderViewModel.Start(WindowHandle);
+                    if (Recording)
+                    {
+                        _recordingInstance++;
+                        var screenRecorderViewModel = new ScreenRecorderViewModel();
+                        screenRecorderViewModel.Start(WindowHandle);
                     await Task.Delay(TimeSpan.FromSeconds(5));
-                    screenRecorderViewModel.Stop();
+                        screenRecorderViewModel.Stop();
+                    }
+                    else
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(1));
+                    }
                 }
             }
             catch (Exception e)
